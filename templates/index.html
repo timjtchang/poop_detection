@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Upload</title>
+    <style>
+      #imagePreview {
+        max-width: 300px;
+        max-height: 300px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Upload an Image for Detection</h1>
+    <form action="/detect" method="post" enctype="multipart/form-data">
+      <input
+        type="file"
+        name="file"
+        id="imageInput"
+        accept="image/*"
+        required
+      />
+      <button type="submit">Detect</button>
+    </form>
+    <div>
+      <img id="imagePreview" src="" alt="Image preview" style="display: none" />
+    </div>
+    <script>
+      const imageInput = document.getElementById("imageInput");
+      const imagePreview = document.getElementById("imagePreview");
+
+      imageInput.addEventListener("change", function (event) {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            imagePreview.src = e.target.result;
+            imagePreview.style.display = "block";
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    </script>
+  </body>
+</html>

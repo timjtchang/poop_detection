@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Detection Results</title>
+  </head>
+  <body>
+    <h1>Detection Results</h1>
+    <img
+      src="{{ url_for('static', filename=annotated_image) }}"
+      alt="Annotated Image"
+    />
+    <h2>Detections:</h2>
+    <ul>
+      {% for detection in detections %}
+      <li>{{ detection.class }} (Confidence: {{ detection.confidence }})</li>
+      {% endfor %}
+    </ul>
+    <a href="#" id="backToUpload">Back to Upload</a>
+    <script>
+      document
+        .getElementById("backToUpload")
+        .addEventListener("click", function (event) {
+          event.preventDefault();
+
+          fetch("{{ url_for('delete_annotated_image') }}", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ filename: "{{ annotated_image }}" }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              console.log(data);
+              window.location.href = "/"; // Redirect to home page after deletion
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              window.location.href = "/"; // Redirect even if there's an error
+            });
+        });
+    </script>
+  </body>
+</html>
