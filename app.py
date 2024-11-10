@@ -5,6 +5,7 @@ import cv2
 import os
 import hashlib
 import time
+import numpy as np
 from werkzeug.utils import secure_filename
 
 RESULT_IMAGE_ADDRESS = 'static/'
@@ -21,12 +22,6 @@ if not os.path.exists(annotated_folder):
 
 app = Flask(__name__, static_folder=static_folder)
 
-# Configure upload folder
-UPLOAD_FOLDER = 'uploads'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
 # Initialize Roboflow
 rf = Roboflow(api_key="UomLf0Xwob2r0IbXHHuq")
 project = rf.workspace().project("fake-dog-poop")
@@ -37,19 +32,10 @@ label_annotator = sv.LabelAnnotator()
 bounding_box_annotator = sv.BoxAnnotator()
 
 def generate_file_hash(filename):
-    # Create a hash object
     digest = hashlib.sha256()
-    
-    # Get the current timestamp
     timestamp = str(int(time.time()))
-    
-    # Concatenate the filename and timestamp
     combined = f"{filename}_{timestamp}"
-    
-    # Update the hash object with the combined string
     digest.update(combined.encode())
-    
-    # Return the hexadecimal representation of the hash
     return digest.hexdigest()
 
 @app.route('/', methods=['GET'])
@@ -76,17 +62,24 @@ def detect():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     if file:
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-        
         try:
-            # Load and process the image
-            image = cv2.imread(filepath)
+            # Read the file directly into memory
+            file_bytes = file.read()
+            nparr = np.frombuffer(file_bytes, np.uint8)
+            image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
             if image is None:
                 raise FileNotFoundError("Image could not be read")
             
-            result = model.predict(filepath, confidence=15, overlap=30).json()
+            # Save the image temporarily for Roboflow prediction
+            temp_filename = f"temp_{generate_file_hash(file.filename)}.jpg"
+            temp_filepath = os.path.join(static_folder, temp_filename)
+            cv2.imwrite(temp_filepath, image)
+            
+            result = model.predict(temp_filepath, confidence=15, overlap=30).json()
+            
+            # Delete the temporary file
+            os.remove(temp_filepath)
             
             labels = [item["class"] for item in result["predictions"]]
             detections = sv.Detections.from_inference(result)
@@ -97,8 +90,8 @@ def detect():
             annotated_image = label_annotator.annotate(
                 scene=annotated_image, detections=detections, labels=labels)
             
-             # Generate a hash for the filename
-            file_hash = generate_file_hash(filename)
+            # Generate a hash for the filename
+            file_hash = generate_file_hash(file.filename)
 
             # Save the annotated image in the static folder using the hash
             output_filename = f"{file_hash}.jpg"
