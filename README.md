@@ -19,7 +19,7 @@ To set up and run the server, follow these steps:
    ```
 3. Install the required dependencies:
    ```
-   pip install -r requirements.txt
+   pip3 install -r requirements.txt
    ```
 4. Set up your Roboflow API key:
 
