@@ -24,9 +24,9 @@ To set up and run the server, follow these steps:
 4. Set up your Roboflow API key:
 
 - Sign up for a Roboflow account if you haven't already
-- Create a new project and obtain your API key
-- Create a `.env` file based on `.env.example`
-- Replace the API key in `.env` with your own:
+- Log in and visit `https://universe.roboflow.com/dog-poop/fake-dog-poop/model/1` to get your API_KEY
+- Clone the `.env.example` file to create a new `.env` file:
+- Update the `.env` file with your Roboflow credentials:
   ```
   API_KEY = "API_KEY_FOR_ROBOFLOW"
   ```
@@ -53,5 +53,9 @@ To set up and run the server, follow these steps:
 5. The service will analyze the image and display the results, showing any detected dog poop with bounding boxes and confidence scores.
 6. You can upload multiple images in succession.
 7. The processed images are automatically deleted from the server when you navigate away from the results page.
+
+## Reference
+
+https://universe.roboflow.com/dog-poop/fake-dog-poop/model/1
 
 Note: This service is intended for demonstration purposes. The accuracy of detection may vary depending on the quality and content of the uploaded images.
