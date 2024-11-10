@@ -7,6 +7,13 @@ import hashlib
 import time
 import numpy as np
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Access the variables
+API_KEY = os.getenv("API_KEY")
 
 RESULT_IMAGE_ADDRESS = 'static/'
 
@@ -23,7 +30,7 @@ if not os.path.exists(annotated_folder):
 app = Flask(__name__, static_folder=static_folder)
 
 # Initialize Roboflow
-rf = Roboflow(api_key="UomLf0Xwob2r0IbXHHuq")
+rf = Roboflow(api_key=API_KEY)
 project = rf.workspace().project("fake-dog-poop")
 model = project.version(1).model
 
