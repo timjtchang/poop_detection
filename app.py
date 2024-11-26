@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file
 from roboflow import Roboflow
 import supervision as sv
 import cv2
@@ -45,29 +45,10 @@ def generate_file_hash(filename):
     digest.update(combined.encode())
     return digest.hexdigest()
 
-@app.route('/', methods=['GET'])
-def index():
-    return render_template('index.html')
-
-@app.route('/delete-annotated-image', methods=['POST'])
-def delete_annotated_image():
-    data = request.get_json()
-    filename = data.get('filename')
-    
-    if filename:
-        file_path = os.path.join(app.static_folder, filename)
-        if os.path.exists(file_path):
-            os.remove(file_path)
-            return jsonify({'message': 'File deleted successfully'}), 200
-    return jsonify({'message': 'File not found'}), 404
-
-@app.route('/detect', methods=['POST'])
-def detect():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-    file = request.files['file']
+def detect(file):
     if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+        return 'No selected file'
+    
     if file:
         try:
             # Read the file directly into memory
@@ -76,7 +57,7 @@ def detect():
             image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             
             if image is None:
-                raise FileNotFoundError("Image could not be read")
+                return 'no image'
             
             # Save the image temporarily for Roboflow prediction
             temp_filename = f"temp_{generate_file_hash(file.filename)}.jpg"
@@ -105,12 +86,95 @@ def detect():
             output_path = os.path.join(annotated_folder, output_filename)
             cv2.imwrite(output_path, annotated_image)
 
-            return render_template('result.html', 
-                                annotated_image=f"annotated_images/{output_filename}",
-                                detections=result["predictions"])
+            return [output_filename, result["predictions"] ]
             
         except Exception as e:
-            return render_template('error.html', error=str(e)), 500
+            return e
 
+@app.route('/', methods=['GET'])
+def index():
+    return render_template('index.html')
+
+@app.route('/delete-annotated-image', methods=['POST'])
+def delete_annotated_image():
+    data = request.get_json()
+    filename = data.get('filename')
+    
+    if filename:
+        file_path = os.path.join(app.static_folder, filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            return jsonify({'message': 'File deleted successfully'}), 200
+    return jsonify({'message': 'File not found'}), 404
+
+@app.route('/detect_url', methods=['POST'])
+def detect_url():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    result = detect(file)
+
+    print(result)
+
+    if isinstance(result, list):
+        if len(result[1]) > 0:
+            return jsonify({'ifwaste': 1, 'data': result[1], 'image':result[0]}), 200
+        else:
+            return jsonify({'ifwaste': 0, 'data': result[1], 'image':result[0]}), 200
+    elif(result == 'no file'):
+        return jsonify({'error': 'No file part'}), 400
+    elif( result == 'No selected file'):
+        return jsonify({'error': 'No selected file'}), 400
+    elif( result == 'no image'):
+        return jsonify({'error': 'Image Could not read'}), 400
+    elif( result is Exception ):
+        return jsonify({'error': 'Server Issues'}), 402
+
+
+
+@app.route('/detect', methods=['POST'])
+def detect_ui():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    result = detect(file)
+
+    if isinstance(result, list):
+        return render_template('result.html', 
+                    annotated_image=f"annotated_images/{result[0]}",
+                    detections=result[1])
+    elif(result == 'no file'):
+        return jsonify({'error': 'No file part'}), 400
+    elif( result == 'No selected file'):
+        return jsonify({'error': 'No selected file'}), 400
+    elif( result == 'no image'):
+        return jsonify({'error': 'Image Could not read'}), 400
+    elif( result is Exception ):
+        return render_template('error.html', error=str(result)), 500
+    
+
+@app.route('/getImage/<string:image_name>', methods=['GET'])
+def getImage(image_name):
+
+    print('hello')
+    # Define the directory where your images are stored
+    image_directory = 'static/annotated_images'
+    
+    # Construct the full path to the requested image
+    image_path = os.path.join(image_directory, image_name)
+    
+    # Check if the file exists
+    if os.path.isfile(image_path):
+        # Determine the MIME type based on the file extension
+        _, ext = os.path.splitext(image_name)
+        mime_type = 'image/jpeg' if ext.lower() in ['.jpg', '.jpeg'] else 'image/png'
+        
+        # Return the image file
+        return send_file(image_path, mimetype=mime_type)
+    else:
+        return jsonify({'error': 'Image Not Exist'}), 404
+    
 if __name__ == '__main__':
     app.run(debug=True)
