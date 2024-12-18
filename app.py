@@ -5,7 +5,9 @@ import cv2
 import os
 import hashlib
 import time
+import json
 import numpy as np
+import requests
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 
@@ -109,7 +111,6 @@ def delete_annotated_image():
 
 @app.route('/detect_url', methods=['POST'])
 def detect_url():
-
     print("hello")
     # Check for the presence of required files and parameters
     if 'file' not in request.files:
@@ -119,7 +120,7 @@ def detect_url():
     latitude = request.form.get('latitude')
     longitude = request.form.get('longitude')
 
-    print( latitude, ", ", longitude );
+    print(latitude, ", ", longitude)
     
     # Validate latitude and longitude
     if not latitude or not longitude:
@@ -138,6 +139,22 @@ def detect_url():
 
     if isinstance(result, list):
         if len(result[1]) > 0:
+            # Waste detected, send data to ThingsBoard
+            url = "http://44.244.136.206:8080/api/v1/CEqOvwwvX7qojLWjDS0v/telemetry"
+            headers = {"Content-Type": "application/json"}
+            ts = int(time.time() * 1000)  # Current timestamp in milliseconds
+            data = json.dumps({
+                "ts": ts,
+                "latitude": latitude,
+                "longitude": longitude
+            })
+
+            try:
+                resp = requests.post(url, headers=headers, data=data)
+                resp.raise_for_status()  # Raise an exception for HTTP errors
+            except requests.exceptions.RequestException as e:
+                print(f"Error sending data to ThingsBoard: {e}")
+
             return jsonify({'ifwaste': 1, 'data': result[1], 'image': result[0], 'latitude': latitude, 'longitude': longitude}), 200
         else:
             return jsonify({'ifwaste': 0, 'data': result[1], 'image': result[0], 'latitude': latitude, 'longitude': longitude}), 200
@@ -149,6 +166,7 @@ def detect_url():
         return jsonify({'error': 'Image could not be read'}), 400
     elif isinstance(result, Exception):
         return jsonify({'error': 'Server issues'}), 402
+
 
 
 
