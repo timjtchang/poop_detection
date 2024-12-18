@@ -1,7 +1,7 @@
 import requests
 
 # Define the endpoint URL
-url = "http://127.0.0.1:5000/detect_url"
+url = "http://44.241.50.70:5000/detect_url"
 
 # File path to test image
 file_path = "../samples/shit1.jpg"

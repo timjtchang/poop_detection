@@ -109,27 +109,47 @@ def delete_annotated_image():
 
 @app.route('/detect_url', methods=['POST'])
 def detect_url():
+
+    print("hello")
+    # Check for the presence of required files and parameters
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     
     file = request.files['file']
-    result = detect(file)
+    latitude = request.form.get('latitude')
+    longitude = request.form.get('longitude')
 
+    print( latitude, ", ", longitude );
+    
+    # Validate latitude and longitude
+    if not latitude or not longitude:
+        return jsonify({'error': 'Latitude and longitude are required'}), 400
+    
+    try:
+        # Attempt to convert latitude and longitude to floats
+        latitude = float(latitude)
+        longitude = float(longitude)
+    except ValueError:
+        return jsonify({'error': 'Invalid latitude or longitude'}), 400
+
+    result = detect(file)
     print(result)
+    print(f"Latitude: {latitude}, Longitude: {longitude}")
 
     if isinstance(result, list):
         if len(result[1]) > 0:
-            return jsonify({'ifwaste': 1, 'data': result[1], 'image':result[0]}), 200
+            return jsonify({'ifwaste': 1, 'data': result[1], 'image': result[0], 'latitude': latitude, 'longitude': longitude}), 200
         else:
-            return jsonify({'ifwaste': 0, 'data': result[1], 'image':result[0]}), 200
-    elif(result == 'no file'):
+            return jsonify({'ifwaste': 0, 'data': result[1], 'image': result[0], 'latitude': latitude, 'longitude': longitude}), 200
+    elif result == 'no file':
         return jsonify({'error': 'No file part'}), 400
-    elif( result == 'No selected file'):
+    elif result == 'No selected file':
         return jsonify({'error': 'No selected file'}), 400
-    elif( result == 'no image'):
-        return jsonify({'error': 'Image Could not read'}), 400
-    elif( result is Exception ):
-        return jsonify({'error': 'Server Issues'}), 402
+    elif result == 'no image':
+        return jsonify({'error': 'Image could not be read'}), 400
+    elif isinstance(result, Exception):
+        return jsonify({'error': 'Server issues'}), 402
+
 
 
 
