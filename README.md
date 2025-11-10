@@ -4,7 +4,9 @@ This service provides an API for detecting dog poop in images using machine lear
 
 ## Demo
 
-![Demo](docs/demo.gif)
+![Demo](docs/demo1.gif)
+![Demo](docs/demo2.gif)
+![Demo](docs/demo3.gif)
 
 ## Setup
 
