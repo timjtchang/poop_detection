@@ -2,6 +2,10 @@
 
 This service provides an API for detecting dog poop in images using machine learning.
 
+## Demo
+
+![Demo](docs/demo.gif)
+
 ## Setup
 
 To set up and run the server, follow these steps:
